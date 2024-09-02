@@ -6,10 +6,10 @@ const cTable = require('console.table');
 
 // PostgreSQL client configuration
 const client = new Client({
-    user: 'postgre',            // Replace with your PostgreSQL username
+    user: 'postgres',                 // Replace with your PostgreSQL username
     host: 'localhost',                // Replace with your database host, usually 'localhost'
-    database: 'employeetracker',   // Replace with your PostgreSQL database name
-    password: '1234',        // Replace with your PostgreSQL password
+    database: 'employeetracker',      // Replace with your PostgreSQL database name
+    password: '1234',                 // Replace with your PostgreSQL password
     port: 5432,                       // Default PostgreSQL port
 });
 
@@ -104,8 +104,7 @@ const viewAllRoles = () => {
 
 const viewAllEmployees = () => {
     const query = `
-        SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary,
-               COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager 
+        SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary, COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager 
         FROM employee e 
         JOIN role r ON e.role_id = r.id 
         JOIN department d ON r.department_id = d.id 
