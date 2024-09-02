@@ -8,7 +8,7 @@ const cTable = require('console.table');
 const client = new Client({
     user: 'postgres',                 // Replace with your PostgreSQL username
     host: 'localhost',                // Replace with your database host, usually 'localhost'
-    database: 'postgres',      // Replace with your PostgreSQL database name
+    database: 'postgres',             // Replace with your PostgreSQL database name
     password: '1234',                 // Replace with your PostgreSQL password
     port: 5432,                       // Default PostgreSQL port
 });
