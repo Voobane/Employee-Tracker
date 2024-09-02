@@ -45,10 +45,17 @@ const mainMenu = () => {
             'View all departments',
             'View all roles',
             'View all employees',
+            'View employees by manager',
+            'View employees by department',
+            'View total utilized budget by department',
             'Add a department',
             'Add a role',
             'Add an employee',
             'Update an employee role',
+            'Update an employee manager',
+            'Delete a department',
+            'Delete a role',
+            'Delete an employee',
             'Exit'
         ],
     }).then((answer) => {
@@ -62,6 +69,15 @@ const mainMenu = () => {
             case 'View all employees':
                 viewAllEmployees();
                 break;
+            case 'View employees by manager':
+                viewEmployeesByManager();
+                break;
+            case 'View employees by department':
+                viewEmployeesByDepartment();
+                break;
+            case 'View total utilized budget by department':
+                viewDepartmentBudget();
+                break;
             case 'Add a department':
                 addDepartment();
                 break;
@@ -73,6 +89,18 @@ const mainMenu = () => {
                 break;
             case 'Update an employee role':
                 updateEmployeeRole();
+                break;
+            case 'Update an employee manager':
+                updateEmployeeManager();
+                break;
+            case 'Delete a department':
+                deleteDepartment();
+                break;
+            case 'Delete a role':
+                deleteRole();
+                break;
+            case 'Delete an employee':
+                deleteEmployee();
                 break;
             default:
                 client.end();
@@ -104,7 +132,8 @@ const viewAllRoles = () => {
 
 const viewAllEmployees = () => {
     const query = `
-        SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary, COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager 
+        SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary,
+               COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager 
         FROM employee e 
         JOIN role r ON e.role_id = r.id 
         JOIN department d ON r.department_id = d.id 
@@ -114,6 +143,72 @@ const viewAllEmployees = () => {
         if (err) throw err;
         console.table(res.rows);
         mainMenu();
+    });
+};
+
+const viewEmployeesByManager = () => {
+    inquirer.prompt({
+        name: 'manager_id',
+        type: 'input',
+        message: 'Enter the manager ID to view their employees:',
+    }).then((answer) => {
+        const query = `
+            SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department
+            FROM employee e
+            JOIN role r ON e.role_id = r.id
+            JOIN department d ON r.department_id = d.id
+            WHERE e.manager_id = $1;
+        `;
+        client.query(query, [answer.manager_id], (err, res) => {
+            if (err) throw err;
+            console.table(res.rows);
+            mainMenu();
+        });
+    });
+};
+
+const viewEmployeesByDepartment = () => {
+    inquirer.prompt({
+        name: 'department_id',
+        type: 'input',
+        message: 'Enter the department ID to view its employees:',
+    }).then((answer) => {
+        const query = `
+            SELECT e.id, e.first_name, e.last_name, r.title AS job_title, r.salary,
+                   COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager
+            FROM employee e
+            JOIN role r ON e.role_id = r.id
+            JOIN department d ON r.department_id = d.id
+            LEFT JOIN employee m ON e.manager_id = m.id
+            WHERE d.id = $1;
+        `;
+        client.query(query, [answer.department_id], (err, res) => {
+            if (err) throw err;
+            console.table(res.rows);
+            mainMenu();
+        });
+    });
+};
+
+const viewDepartmentBudget = () => {
+    inquirer.prompt({
+        name: 'department_id',
+        type: 'input',
+        message: 'Enter the department ID to view its total utilized budget:',
+    }).then((answer) => {
+        const query = `
+            SELECT d.name AS department, SUM(r.salary) AS utilized_budget
+            FROM employee e
+            JOIN role r ON e.role_id = r.id
+            JOIN department d ON r.department_id = d.id
+            WHERE d.id = $1
+            GROUP BY d.name;
+        `;
+        client.query(query, [answer.department_id], (err, res) => {
+            if (err) throw err;
+            console.table(res.rows);
+            mainMenu();
+        });
     });
 };
 
@@ -217,6 +312,74 @@ const updateEmployeeRole = () => {
         client.query(query, [answer.role_id, answer.employee_id], (err, res) => {
             if (err) throw err;
             console.log('Employee role updated successfully!');
+            mainMenu();
+        });
+    });
+};
+
+const updateEmployeeManager = () => {
+    inquirer.prompt([
+        {
+            name: 'employee_id',
+            type: 'input',
+            message: 'Enter the employee ID:',
+        },
+        {
+            name: 'manager_id',
+            type: 'input',
+            message: 'Enter the new manager ID:',
+        },
+    ]).then((answer) => {
+        const query = `
+            UPDATE employee 
+            SET manager_id = $1 
+            WHERE id = $2;
+        `;
+        client.query(query, [answer.manager_id, answer.employee_id], (err, res) => {
+            if (err) throw err;
+            console.log('Employee manager updated successfully!');
+            mainMenu();
+        });
+    });
+};
+
+const deleteDepartment = () => {
+    inquirer.prompt({
+        name: 'department_id',
+        type: 'input',
+        message: 'Enter the department ID to delete:',
+    }).then((answer) => {
+        client.query('DELETE FROM department WHERE id = $1;', [answer.department_id], (err, res) => {
+            if (err) throw err;
+            console.log('Department deleted successfully!');
+            mainMenu();
+        });
+    });
+};
+
+const deleteRole = () => {
+    inquirer.prompt({
+        name: 'role_id',
+        type: 'input',
+        message: 'Enter the role ID to delete:',
+    }).then((answer) => {
+        client.query('DELETE FROM role WHERE id = $1;', [answer.role_id], (err, res) => {
+            if (err) throw err;
+            console.log('Role deleted successfully!');
+            mainMenu();
+        });
+    });
+};
+
+const deleteEmployee = () => {
+    inquirer.prompt({
+        name: 'employee_id',
+        type: 'input',
+        message: 'Enter the employee ID to delete:',
+    }).then((answer) => {
+        client.query('DELETE FROM employee WHERE id = $1;', [answer.employee_id], (err, res) => {
+            if (err) throw err;
+            console.log('Employee deleted successfully!');
             mainMenu();
         });
     });
