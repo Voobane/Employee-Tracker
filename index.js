@@ -1,20 +1,42 @@
-const inquirer = require('inquirer');
 const { Client } = require('pg');
+const fs = require('fs');
+const path = require('path');
+const inquirer = require('inquirer');
 const cTable = require('console.table');
 
 // PostgreSQL client configuration
 const client = new Client({
-    user: 'postgresql',            // Replace with your PostgreSQL username
+    user: 'postgre',            // Replace with your PostgreSQL username
     host: 'localhost',                // Replace with your database host, usually 'localhost'
-    database: 'employetracker',   // Replace with your PostgreSQL database name
+    database: 'employeetracker',   // Replace with your PostgreSQL database name
     password: '1234',        // Replace with your PostgreSQL password
     port: 5432,                       // Default PostgreSQL port
 });
 
-// Connect to the database
 client.connect();
 
-function mainMenu() {
+const runSqlFile = async (filePath) => {
+    const fullPath = path.join(__dirname, 'db', filePath);
+    const sql = fs.readFileSync(fullPath, { encoding: 'utf8' });
+
+    try {
+        await client.query(sql);
+        console.log(`Successfully executed ${filePath}`);
+    } catch (err) {
+        console.error(`Error executing ${filePath}:`, err);
+    }
+};
+
+const setupDatabase = async () => {
+    try {
+        await runSqlFile('schema.sql'); // Run schema.sql to create tables
+        await runSqlFile('seeds.sql');  // Run seeds.sql to populate tables with initial data
+    } catch (err) {
+        console.error('Error setting up database:', err);
+    }
+};
+
+const mainMenu = () => {
     inquirer.prompt({
         name: 'action',
         type: 'list',
@@ -57,17 +79,17 @@ function mainMenu() {
                 console.log("Goodbye!");
         }
     });
-}
+};
 
-function viewAllDepartments() {
+const viewAllDepartments = () => {
     client.query('SELECT id, name FROM department;', (err, res) => {
         if (err) throw err;
         console.table(res.rows);
         mainMenu();
     });
-}
+};
 
-function viewAllRoles() {
+const viewAllRoles = () => {
     const query = `
         SELECT r.id, r.title, r.salary, d.name AS department 
         FROM role r 
@@ -78,11 +100,12 @@ function viewAllRoles() {
         console.table(res.rows);
         mainMenu();
     });
-}
+};
 
-function viewAllEmployees() {
+const viewAllEmployees = () => {
     const query = `
-        SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary, COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager 
+        SELECT e.id, e.first_name, e.last_name, r.title AS job_title, d.name AS department, r.salary,
+               COALESCE(m.first_name || ' ' || m.last_name, 'None') AS manager 
         FROM employee e 
         JOIN role r ON e.role_id = r.id 
         JOIN department d ON r.department_id = d.id 
@@ -93,9 +116,9 @@ function viewAllEmployees() {
         console.table(res.rows);
         mainMenu();
     });
-}
+};
 
-function addDepartment() {
+const addDepartment = () => {
     inquirer.prompt({
         name: 'name',
         type: 'input',
@@ -107,9 +130,9 @@ function addDepartment() {
             mainMenu();
         });
     });
-}
+};
 
-function addRole() {
+const addRole = () => {
     inquirer.prompt([
         {
             name: 'title',
@@ -137,9 +160,9 @@ function addRole() {
             mainMenu();
         });
     });
-}
+};
 
-function addEmployee() {
+const addEmployee = () => {
     inquirer.prompt([
         {
             name: 'first_name',
@@ -172,9 +195,9 @@ function addEmployee() {
             mainMenu();
         });
     });
-}
+};
 
-function updateEmployeeRole() {
+const updateEmployeeRole = () => {
     inquirer.prompt([
         {
             name: 'employee_id',
@@ -198,7 +221,10 @@ function updateEmployeeRole() {
             mainMenu();
         });
     });
-}
+};
 
-// Start the application
-mainMenu();
+// First set up the database, then start the main menu
+setupDatabase().then(() => {
+    console.log("Database setup complete.");
+    mainMenu();
+});
