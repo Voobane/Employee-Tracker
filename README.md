@@ -1,3 +1,10 @@
+
+
+Video Walkthrough Link: 
+
+Git Hub Repo Link: https://github.com/Voobane/Employee-Tracker
+
+
 # 12 SQL: Employee Tracker
 
 ## Your Task
@@ -46,7 +53,7 @@ The following video shows an example of the application being used from the comm
 
 ## Getting Started
 
-This Challenge will require a video submission. Refer to the [Fullstack Blog Video Submission Guide](https://coding-boot-camp.github.io/full-stack/computer-literacy/video-submission-guide) for additional guidance on creating a video.
+This Challenge will requife a video submission. Refer to the [Fullstack Blog Video Submission Guide](https://coding-boot-camp.github.io/full-stack/computer-literacy/video-submission-guide) for additional guidance on creating a video.
 
 You’ll need to use the [pg package](https://www.npmjs.com/package/pg) to connect to your PostgreSQL database and perform queries, and the [Inquirer package](https://www.npmjs.com/package/inquirer/v/8.2.4) to interact with the user via the command line.
 
