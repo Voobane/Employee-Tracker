@@ -45,14 +45,14 @@ const mainMenu = () => {
             'View all departments',
             'View all roles',
             'View all employees',
-            'View employees by manager',
-            'View employees by department',
-            'View total utilized budget by department',
             'Add a department',
             'Add a role',
             'Add an employee',
             'Update an employee role',
             'Update an employee manager',
+            'View employees by manager',
+            'View employees by department',
+            'View total utilized budget by department',
             'Delete a department',
             'Delete a role',
             'Delete an employee',
@@ -227,66 +227,105 @@ const addDepartment = () => {
 };
 
 const addRole = () => {
-    inquirer.prompt([
-        {
-            name: 'title',
-            type: 'input',
-            message: 'Enter the role title:',
-        },
-        {
-            name: 'salary',
-            type: 'input',
-            message: 'Enter the salary for this role:',
-        },
-        {
-            name: 'department_id',
-            type: 'input',
-            message: 'Enter the department ID for this role:',
-        },
-    ]).then((answer) => {
-        const query = `
-            INSERT INTO role (title, salary, department_id) 
-            VALUES ($1, $2, $3);
-        `;
-        client.query(query, [answer.title, answer.salary, answer.department_id], (err, res) => {
-            if (err) throw err;
-            console.log('Role added successfully!');
-            mainMenu();
+    // Fetch departments from the database to show as choices
+    client.query('SELECT id, name FROM department;', (err, res) => {
+        if (err) throw err;
+
+        // Prepare department choices for the prompt
+        const departments = res.rows.map(department => ({
+            name: department.name,
+            value: department.id
+        }));
+
+        // Prompt for the role details, including department selection
+        inquirer.prompt([
+            {
+                name: 'title',
+                type: 'input',
+                message: 'Enter the role title:',
+            },
+            {
+                name: 'salary',
+                type: 'input',
+                message: 'Enter the salary for this role:',
+                validate: (input) => !isNaN(input) || "Please enter a valid number"
+            },
+            {
+                name: 'department_id',
+                type: 'list',
+                message: 'Select the department for this role:',
+                choices: departments // Show list of departments
+            },
+        ]).then((answer) => {
+            const query = `
+                INSERT INTO role (title, salary, department_id) 
+                VALUES ($1, $2, $3);
+            `;
+            client.query(query, [answer.title, answer.salary, answer.department_id], (err, res) => {
+                if (err) throw err;
+                console.log('Role added successfully!');
+                mainMenu();
+            });
         });
     });
 };
 
 const addEmployee = () => {
-    inquirer.prompt([
-        {
-            name: 'first_name',
-            type: 'input',
-            message: 'Enter the employee first name:',
-        },
-        {
-            name: 'last_name',
-            type: 'input',
-            message: 'Enter the employee last name:',
-        },
-        {
-            name: 'role_id',
-            type: 'input',
-            message: 'Enter the employee role ID:',
-        },
-        {
-            name: 'manager_id',
-            type: 'input',
-            message: 'Enter the manager ID for this employee (leave blank if none):',
-        },
-    ]).then((answer) => {
-        const query = `
-            INSERT INTO employee (first_name, last_name, role_id, manager_id) 
-            VALUES ($1, $2, $3, $4);
-        `;
-        client.query(query, [answer.first_name, answer.last_name, answer.role_id, answer.manager_id || null], (err, res) => {
+    // Fetch roles and employees to show in the prompts
+    client.query('SELECT id, title FROM role;', (err, roleRes) => {
+        if (err) throw err;
+
+        const roles = roleRes.rows.map(role => ({
+            name: role.title,
+            value: role.id
+        }));
+
+        client.query('SELECT id, first_name, last_name FROM employee;', (err, empRes) => {
             if (err) throw err;
-            console.log('Employee added successfully!');
-            mainMenu();
+
+            const managers = empRes.rows.map(emp => ({
+                name: `${emp.first_name} ${emp.last_name}`,
+                value: emp.id
+            }));
+
+            // Add "None" option for employees without a manager
+            managers.push({ name: 'None', value: null });
+
+            // Prompt for employee details
+            inquirer.prompt([
+                {
+                    name: 'first_name',
+                    type: 'input',
+                    message: 'Enter the employee first name:',
+                },
+                {
+                    name: 'last_name',
+                    type: 'input',
+                    message: 'Enter the employee last name:',
+                },
+                {
+                    name: 'role_id',
+                    type: 'list',
+                    message: 'Select the role for this employee:',
+                    choices: roles // List of role names for the user to select from
+                },
+                {
+                    name: 'manager_id',
+                    type: 'list',
+                    message: 'Select the manager for this employee (optional):',
+                    choices: managers // List of managers (employees)
+                }
+            ]).then((answer) => {
+                const query = `
+                    INSERT INTO employee (first_name, last_name, role_id, manager_id) 
+                    VALUES ($1, $2, $3, $4);
+                `;
+                client.query(query, [answer.first_name, answer.last_name, answer.role_id, answer.manager_id], (err, res) => {
+                    if (err) throw err;
+                    console.log('Employee added successfully!');
+                    mainMenu();
+                });
+            });
         });
     });
 };
