@@ -1,6 +1,6 @@
 
 
-Video Walkthrough Link: 
+Video Walkthrough Link: https://drive.google.com/file/d/1t2SJlVh22TKFvqXOwrjKQZKfIibljsOH/view?usp=sharing
 
 Git Hub Repo Link: https://github.com/Voobane/Employee-Tracker
 
